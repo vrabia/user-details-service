@@ -1,0 +1,62 @@
+version: '3.9'
+services:
+  user-details-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: user-details-service
+    restart: always
+    ports:
+      - ${SERVICE_HOST_PORT}:${SERVICE_CONTAINER_PORT}
+    networks:
+      - ${VRABIA_NETWORK}
+    env_file:
+      - .envrc
+    depends_on:
+      user-details-db:
+        condition: service_healthy
+      user-details-way:
+        condition: service_completed_successfully
+
+  user-details-db:
+    image: mysql:latest
+    container_name: user-details-db
+    restart: always
+    command: --default-authentication-plugin=mysql_native_password --character-set-server=latin1 --collation-server=latin1_general_cs
+    ports:
+      - ${DB_HOST_PORT}:${DB_CONTAINER_PORT}
+    networks:
+      - ${VRABIA_NETWORK}
+    env_file:
+      - .envrc
+    environment:
+      MYSQL_TCP_PORT: ${DB_CONTAINER_PORT}
+    volumes:
+      - user-details-db-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "$MYSQL_USER", "-p$$MYSQL_PASSWORD"]
+      timeout: 20s
+      retries: 10
+
+  user-details-way:
+    image: flyway/flyway:latest
+    container_name: user-details-way
+    environment:
+      FLYWAY_USER: ${MYSQL_USER}
+      FLYWAY_PASSWORD: ${MYSQL_PASSWORD}
+      FLYWAY_URL: jdbc:mysql://user-details-db:${DB_CONTAINER_PORT}/${MYSQL_DATABASE}
+    command: [ "repair", "migrate", "info", "-connectRetries=10" ]
+    networks:
+      - ${VRABIA_NETWORK}
+    volumes:
+      - ./sql_versions:/flyway/sql
+    depends_on:
+      user-details-db:
+        condition: service_healthy
+
+networks:
+  auth-service_vrabia-network:
+    external: true
+
+volumes:
+  user-details-db-data:
