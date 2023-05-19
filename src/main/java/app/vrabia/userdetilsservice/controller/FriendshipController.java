@@ -47,24 +47,33 @@ public class FriendshipController {
     }
 
     @GetMapping("/friend-request/sent")
-    public ResponseEntity<List<FriendshipDTO>> getSentFriendRequests(@RequestHeader(AUTHORIZATION_HEADER) String authorizationHeader) {
+    public ResponseEntity<List<FriendshipDTO>> getSentFriendRequests(@RequestParam(value = "page", required = false) Integer page,
+                                                                     @RequestParam(value = "pageSize", required = false) Integer pageSize,
+                                                                     @RequestParam(value = "search", required = false) String search,
+                                                                     @RequestHeader(AUTHORIZATION_HEADER) String authorizationHeader) {
         log.info("Get sent friend requests");
         String userId = getUserIdFromAuthorizationHeader(authorizationHeader);
-        return ResponseEntity.ok(friendshipService.getSentFriendRequests(userId));
+        return ResponseEntity.ok(friendshipService.getSentFriendRequests(userId, search, page, pageSize));
     }
 
     @GetMapping("/friend-request/received")
-    public ResponseEntity<List<FriendshipDTO>> getReceivedFriendRequests(@RequestHeader(AUTHORIZATION_HEADER) String authorizationHeader) {
+    public ResponseEntity<List<FriendshipDTO>> getReceivedFriendRequests(@RequestParam(value = "page", required = false) Integer page,
+                                                                         @RequestParam(value = "pageSize", required = false) Integer pageSize,
+                                                                         @RequestParam(value = "search", required = false) String search,
+                                                                         @RequestHeader(AUTHORIZATION_HEADER) String authorizationHeader) {
         log.info("Get received friend requests");
         String userId = getUserIdFromAuthorizationHeader(authorizationHeader);
-        return ResponseEntity.ok(friendshipService.getReceivedFriendRequests(userId));
+        return ResponseEntity.ok(friendshipService.getReceivedFriendRequests(userId, search, page, pageSize));
     }
 
     @GetMapping("/friends")
-    public ResponseEntity<List<FriendshipDTO>> getFriends(@RequestHeader(AUTHORIZATION_HEADER) String authorizationHeader) {
+    public ResponseEntity<List<FriendshipDTO>> getFriends(@RequestParam(value = "page", required = false) Integer page,
+                                                          @RequestParam(value = "pageSize", required = false) Integer pageSize,
+                                                          @RequestParam(value = "search", required = false) String search,
+                                                          @RequestHeader(AUTHORIZATION_HEADER) String authorizationHeader) {
         log.info("Get friends");
         String userId = getUserIdFromAuthorizationHeader(authorizationHeader);
-        return ResponseEntity.ok(friendshipService.getFriends(userId));
+        return ResponseEntity.ok(friendshipService.getFriends(userId, search, page, pageSize));
     }
 
     @DeleteMapping("/friends")
@@ -73,6 +82,17 @@ public class FriendshipController {
         String userId = getUserIdFromAuthorizationHeader(authorizationHeader);
         friendshipService.removeFriendship(userId, friend.getFriendId());
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/users")
+    public ResponseEntity<List<FriendshipDTO>> getUsers(@RequestParam(value = "page", required = false) Integer page,
+                                                        @RequestParam(value = "pageSize", required = false) Integer pageSize,
+                                                        @RequestParam(value = "search", required = false) String search,
+                                                        @RequestHeader(AUTHORIZATION_HEADER) String authorizationHeader) {
+
+        log.info("Get users");
+        String userId = getUserIdFromAuthorizationHeader(authorizationHeader);
+        return ResponseEntity.ok(friendshipService.getUsersWithFriendshipStatus(userId, search, page, pageSize));
     }
 
     String getUserIdFromAuthorizationHeader(String authorizationHeader) {

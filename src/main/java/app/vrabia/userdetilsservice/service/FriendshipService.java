@@ -13,9 +13,12 @@ public interface FriendshipService {
 
     void removeFriendship(String userId, String friendId);
 
-    List<FriendshipDTO> getFriends(String userId);
+    List<FriendshipDTO> getFriends(String userId, String searchName, Integer page, Integer size);
 
-    List<FriendshipDTO> getSentFriendRequests(String userId);
+    List<FriendshipDTO> getSentFriendRequests(String userId, String searchName, Integer page, Integer size);
 
-    List<FriendshipDTO> getReceivedFriendRequests(String userId);
+    List<FriendshipDTO> getReceivedFriendRequests(String userId, String searchName, Integer page, Integer size);
+
+    List<FriendshipDTO> getUsersWithFriendshipStatus(String userId, String search, Integer page, Integer pageSize);
+
 }

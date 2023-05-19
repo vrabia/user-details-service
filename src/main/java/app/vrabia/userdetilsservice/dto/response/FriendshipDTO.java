@@ -1,10 +1,7 @@
 package app.vrabia.userdetilsservice.dto.response;
 
 import app.vrabia.userdetilsservice.dto.kafka.UserDTO;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 import java.time.LocalDate;
 
@@ -12,6 +9,7 @@ import java.time.LocalDate;
 @NoArgsConstructor
 @Getter
 @Setter
+@Builder
 public class FriendshipDTO {
     private UserDTO friend;
     private FriendshipStatus status;
