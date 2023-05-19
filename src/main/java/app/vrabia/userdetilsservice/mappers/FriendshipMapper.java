@@ -20,6 +20,11 @@ public interface FriendshipMapper {
     @Mapping(target = "user2", source = "receiver")
     Friendship pendingFriendshipToFriendship(PendingFriendship pendingFriendship);
 
+    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "user1", source = "receiver")
+    @Mapping(target = "user2", source = "sender")
+    Friendship pendingFriendshipToReverseFriendship(PendingFriendship pendingFriendship);
+
     @Mapping(target = "friend", ignore = true)
     @Mapping(target = "status", expression = "java(app.vrabia.userdetilsservice.dto.response.FriendshipStatus.ACCEPTED)")
     FriendshipDTO friendshipToFriendshipDTO(Friendship friendship);
