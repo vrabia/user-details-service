@@ -1,7 +1,7 @@
 package app.vrabia.userdetilsservice.controller;
 
 import app.vrabia.userdetilsservice.dto.request.FriendRequestDTO;
-import app.vrabia.userdetilsservice.dto.response.FriendshipDTO;
+import app.vrabia.userdetilsservice.dto.response.PagedFriendshipsResponseDTO;
 import app.vrabia.userdetilsservice.service.FriendshipService;
 import app.vrabia.vrcommon.service.JWTService;
 import lombok.RequiredArgsConstructor;
@@ -10,7 +10,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
 
 @Slf4j
 @RestController
@@ -47,7 +46,7 @@ public class FriendshipController {
     }
 
     @GetMapping("/friend-request/sent")
-    public ResponseEntity<List<FriendshipDTO>> getSentFriendRequests(@RequestParam(value = "page", required = false) Integer page,
+    public ResponseEntity<PagedFriendshipsResponseDTO> getSentFriendRequests(@RequestParam(value = "page", required = false) Integer page,
                                                                      @RequestParam(value = "pageSize", required = false) Integer pageSize,
                                                                      @RequestParam(value = "search", required = false) String search,
                                                                      @RequestHeader(AUTHORIZATION_HEADER) String authorizationHeader) {
@@ -57,7 +56,7 @@ public class FriendshipController {
     }
 
     @GetMapping("/friend-request/received")
-    public ResponseEntity<List<FriendshipDTO>> getReceivedFriendRequests(@RequestParam(value = "page", required = false) Integer page,
+    public ResponseEntity<PagedFriendshipsResponseDTO> getReceivedFriendRequests(@RequestParam(value = "page", required = false) Integer page,
                                                                          @RequestParam(value = "pageSize", required = false) Integer pageSize,
                                                                          @RequestParam(value = "search", required = false) String search,
                                                                          @RequestHeader(AUTHORIZATION_HEADER) String authorizationHeader) {
@@ -67,10 +66,10 @@ public class FriendshipController {
     }
 
     @GetMapping("/friends")
-    public ResponseEntity<List<FriendshipDTO>> getFriends(@RequestParam(value = "page", required = false) Integer page,
-                                                          @RequestParam(value = "pageSize", required = false) Integer pageSize,
-                                                          @RequestParam(value = "search", required = false) String search,
-                                                          @RequestHeader(AUTHORIZATION_HEADER) String authorizationHeader) {
+    public ResponseEntity<PagedFriendshipsResponseDTO> getFriends(@RequestParam(value = "page", required = false) Integer page,
+                                                                  @RequestParam(value = "pageSize", required = false) Integer pageSize,
+                                                                  @RequestParam(value = "search", required = false) String search,
+                                                                  @RequestHeader(AUTHORIZATION_HEADER) String authorizationHeader) {
         log.info("Get friends");
         String userId = getUserIdFromAuthorizationHeader(authorizationHeader);
         return ResponseEntity.ok(friendshipService.getFriends(userId, search, page, pageSize));
@@ -85,7 +84,7 @@ public class FriendshipController {
     }
 
     @GetMapping("/users")
-    public ResponseEntity<List<FriendshipDTO>> getUsers(@RequestParam(value = "page", required = false) Integer page,
+    public ResponseEntity<PagedFriendshipsResponseDTO> getUsers(@RequestParam(value = "page", required = false) Integer page,
                                                         @RequestParam(value = "pageSize", required = false) Integer pageSize,
                                                         @RequestParam(value = "search", required = false) String search,
                                                         @RequestHeader(AUTHORIZATION_HEADER) String authorizationHeader) {
@@ -98,5 +97,12 @@ public class FriendshipController {
     String getUserIdFromAuthorizationHeader(String authorizationHeader) {
         String token = authorizationHeader.substring(BEARER_PREFIX.length());
         return jwtService.decodeJWT(token).getClaim("userId").asString();
+    }
+
+    @DeleteMapping("/random-friend")
+    public ResponseEntity<Void> removeRandomFriend() {
+        log.info("Remove random friend");
+        friendshipService.removeRandomFriendships();
+        return ResponseEntity.noContent().build();
     }
 }
