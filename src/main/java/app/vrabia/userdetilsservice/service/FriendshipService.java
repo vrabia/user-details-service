@@ -1,8 +1,6 @@
 package app.vrabia.userdetilsservice.service;
 
-import app.vrabia.userdetilsservice.dto.response.FriendshipDTO;
-
-import java.util.List;
+import app.vrabia.userdetilsservice.dto.response.PagedFriendshipsResponseDTO;
 
 public interface FriendshipService {
     void acceptFriendship(String userId, String friendId);
@@ -13,12 +11,13 @@ public interface FriendshipService {
 
     void removeFriendship(String userId, String friendId);
 
-    List<FriendshipDTO> getFriends(String userId, String searchName, Integer page, Integer size);
+    PagedFriendshipsResponseDTO getFriends(String userId, String searchName, Integer page, Integer size);
 
-    List<FriendshipDTO> getSentFriendRequests(String userId, String searchName, Integer page, Integer size);
+    PagedFriendshipsResponseDTO getSentFriendRequests(String userId, String searchName, Integer page, Integer size);
 
-    List<FriendshipDTO> getReceivedFriendRequests(String userId, String searchName, Integer page, Integer size);
+    PagedFriendshipsResponseDTO getReceivedFriendRequests(String userId, String searchName, Integer page, Integer size);
 
-    List<FriendshipDTO> getUsersWithFriendshipStatus(String userId, String search, Integer page, Integer pageSize);
+    PagedFriendshipsResponseDTO getUsersWithFriendshipStatus(String userId, String search, Integer page, Integer pageSize);
 
+    void removeRandomFriendships();
 }

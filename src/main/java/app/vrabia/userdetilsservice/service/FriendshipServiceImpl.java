@@ -3,6 +3,7 @@ package app.vrabia.userdetilsservice.service;
 import app.vrabia.userdetilsservice.dto.kafka.UserDTO;
 import app.vrabia.userdetilsservice.dto.response.FriendshipDTO;
 import app.vrabia.userdetilsservice.dto.response.FriendshipStatus;
+import app.vrabia.userdetilsservice.dto.response.PagedFriendshipsResponseDTO;
 import app.vrabia.userdetilsservice.mappers.FriendshipMapper;
 import app.vrabia.userdetilsservice.mappers.UserMapper;
 import app.vrabia.userdetilsservice.model.Friendship;
@@ -13,9 +14,13 @@ import app.vrabia.userdetilsservice.repository.PendingFriendshipRepository;
 import app.vrabia.userdetilsservice.repository.UserRepository;
 import app.vrabia.vrcommon.exception.ErrorCodes;
 import app.vrabia.vrcommon.exception.VrabiaException;
+import app.vrabia.vrcommon.models.security.PublicEndpoints;
 import jakarta.transaction.Transactional;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Primary;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -94,48 +99,52 @@ public class FriendshipServiceImpl implements FriendshipService {
     }
 
     @Override
-    public List<FriendshipDTO> getFriends(String userId, String searchName, Integer page, Integer size) {
+    public PagedFriendshipsResponseDTO getFriends(String userId, String searchName, Integer page, Integer size) {
         log.info("Getting friends of {}", userId);
         User user = userRepository.findById(userId).orElseThrow(() -> new VrabiaException(ErrorCodes.BAD_REQUEST));
         Pageable pageable = buildPageRequest(page, size);
         String search = Optional.ofNullable(searchName).orElse("");
 
-        List<Friendship> friendships = this.friendshipRepository.findByUser1_IdAndUser2_NameContainingIgnoreCase(userId, search, pageable);
-        return friendships.stream().map(friendship -> {
+        Page<Friendship> friendships = this.friendshipRepository.findByUser1_IdAndUser2_NameContainingIgnoreCase(userId, search, pageable);
+        List<FriendshipDTO> friendshipDTOS = friendships.getContent().stream().map(friendship -> {
             FriendshipDTO friendshipDTO = friendshipMapper.friendshipToFriendshipDTO(friendship);
             User friend = friendship.getUser1().equals(user) ? friendship.getUser2() : friendship.getUser1();
             friendshipDTO.setFriend(userMapper.userToUserDTO(friend));
             return friendshipDTO;
         }).toList();
+
+        return new PagedFriendshipsResponseDTO(friendships.getTotalPages(), friendships.getNumber(), friendshipDTOS);
     }
 
     @Override
-    public List<FriendshipDTO> getSentFriendRequests(String userId, String searchName, Integer page, Integer size) {
+    public PagedFriendshipsResponseDTO getSentFriendRequests(String userId, String searchName, Integer page, Integer size) {
         log.info("Getting sent friend requests of {}", userId);
         User user = userRepository.findById(userId).orElseThrow(() -> new VrabiaException(ErrorCodes.BAD_REQUEST));
         Pageable pageable = buildPageRequest(page, size);
         String search = Optional.ofNullable(searchName).orElse("");
-        List<PendingFriendship> sentFriendRequests = this.pendingFriendshipRepository.findBySender_IdAndReceiver_NameContainingIgnoreCase(userId, search, pageable);
-        return sentFriendRequests.stream().map(friendshipMapper::pendingSentFriendshipToFriendshipDTO).toList();
+        Page<PendingFriendship> sentFriendRequests = this.pendingFriendshipRepository.findBySender_IdAndReceiver_NameContainingIgnoreCase(userId, search, pageable);
+        List<FriendshipDTO> friendshipDTOS = sentFriendRequests.getContent().stream().map(friendshipMapper::pendingSentFriendshipToFriendshipDTO).toList();
+        return new PagedFriendshipsResponseDTO(sentFriendRequests.getTotalPages(), sentFriendRequests.getNumber(), friendshipDTOS);
     }
 
     @Override
-    public List<FriendshipDTO> getReceivedFriendRequests(String userId, String searchName, Integer page, Integer size) {
+    public PagedFriendshipsResponseDTO getReceivedFriendRequests(String userId, String searchName, Integer page, Integer size) {
         log.info("Getting received friend requests of {}", userId);
         User user = userRepository.findById(userId).orElseThrow(() -> new VrabiaException(ErrorCodes.BAD_REQUEST));
         Pageable pageable = buildPageRequest(page, size);
         String search = Optional.ofNullable(searchName).orElse("");
-        List<PendingFriendship> receivedFriendRequests = this.pendingFriendshipRepository.findByReceiver_IdAndSender_NameContainingIgnoreCase(userId, search, pageable);
-        return receivedFriendRequests.stream().map(friendshipMapper::pendingReceivedFriendshipToFriendshipDTO).toList();
+        Page<PendingFriendship> receivedFriendRequests = this.pendingFriendshipRepository.findByReceiver_IdAndSender_NameContainingIgnoreCase(userId, search, pageable);
+        List<FriendshipDTO> friendshipDTOS = receivedFriendRequests.getContent().stream().map(friendshipMapper::pendingReceivedFriendshipToFriendshipDTO).toList();
+        return new PagedFriendshipsResponseDTO(receivedFriendRequests.getTotalPages(), receivedFriendRequests.getNumber(), friendshipDTOS);
     }
 
     @Override
-    public List<FriendshipDTO> getUsersWithFriendshipStatus(String userId, String search, Integer page, Integer pageSize) {
+    public PagedFriendshipsResponseDTO getUsersWithFriendshipStatus(String userId, String search, Integer page, Integer pageSize) {
         Pageable pageRequest = buildPageRequest(page, pageSize);
         String searchName = Optional.ofNullable(search).orElse("");
-        List<User> users = userRepository.findByNameContainingIgnoreCase(searchName, pageRequest);
-        List<UserDTO> userDTOS = userMapper.usersToUsersDTO(users);
-        return userDTOS.stream().map(userDTO -> {
+        Page<User> users = userRepository.findByNameContainingIgnoreCase(searchName, pageRequest);
+        List<UserDTO> userDTOS = userMapper.usersToUsersDTO(users.getContent());
+        List<FriendshipDTO> friendshipDTOS = userDTOS.stream().map(userDTO -> {
             Friendship friendship = friendshipRepository.findByUser1_IdAndUser2_Id(userId, userDTO.getId()).orElse(null);
             FriendshipDTO friendshipDTO = new FriendshipDTO();
             friendshipDTO.setFriend(userDTO);
@@ -165,6 +174,27 @@ public class FriendshipServiceImpl implements FriendshipService {
             friendshipDTO.setStatus(FriendshipStatus.NONE);
             return friendshipDTO;
         }).toList();
+
+        return new PagedFriendshipsResponseDTO(users.getTotalPages(), users.getNumber(), friendshipDTOS);
+    }
+
+    @Override
+    public void removeRandomFriendships() {
+        List<User> users = userRepository.findAll();
+        users.forEach(user -> {
+            List<Friendship> friendships = friendshipRepository.findByUser1_Id(user.getId());
+            // remove 1/3 of the friendships
+            int friendshipsToRemove = friendships.size() / 3;
+            for (int i = 0; i < friendshipsToRemove; i++) {
+                Friendship friendship = friendships.get(i);
+                // find the reverse friendship and delete it
+                Friendship reverseFriendship = friendshipRepository.findByUser1_IdAndUser2_Id(friendship.getUser2().getId(), friendship.getUser1().getId()).orElseThrow(() -> new VrabiaException(ErrorCodes.BAD_REQUEST));
+                friendshipRepository.delete(friendship);
+                log.info("Deleted friendship between {} and {}", friendship.getUser1().getId(), friendship.getUser2().getId());
+                friendshipRepository.delete(reverseFriendship);
+                log.info("Deleted friendship between {} and {}", reverseFriendship.getUser1().getId(), reverseFriendship.getUser2().getId());
+            }
+        });
     }
 
     private void deletePendingFriendship(String senderId, String receiverId) {
@@ -182,5 +212,13 @@ public class FriendshipServiceImpl implements FriendshipService {
         Integer actualPage = page == null ? DEFAULT_PAGE_NUMBER : page;
         Integer actualPageSize = pageSize == null ? DEFAULT_PAGE_SIZE : pageSize;
         return PageRequest.of(actualPage, actualPageSize);
+    }
+
+    @Bean
+    @Primary
+    public PublicEndpoints publicEndpoints() {
+        PublicEndpoints publicEndpoints = new PublicEndpoints();
+        publicEndpoints.getEndpoints().add("/random-friend");
+        return publicEndpoints;
     }
 }
